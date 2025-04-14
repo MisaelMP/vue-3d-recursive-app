@@ -1,5 +1,12 @@
 <template>
-	<TresCanvas clear-color="#F2EDDE" window-size shadows>
+	<TresCanvas
+		clear-color="#F2EDDE"
+		window-size
+		shadows
+		:toneMapping="NoToneMapping"
+		:outputColorSpace="SRGBColorSpace"
+		:shadowMapType="BasicShadowMap"
+	>
 		<TresPerspectiveCamera ref="cameraRef" :position="[0, 0, 5]" />
 		<TresAmbientLight :intensity="0.4" />
 		<TresDirectionalLight
@@ -20,6 +27,7 @@
 	import { provide, ref, onMounted } from 'vue';
 	import { OrbitControls } from '@tresjs/cientos';
 	import RecursivePhone from './components/RecursivePhone.vue';
+	import { NoToneMapping, SRGBColorSpace, BasicShadowMap } from 'three';
 
 	const cameraRef = ref(null);
 	onMounted(() => {

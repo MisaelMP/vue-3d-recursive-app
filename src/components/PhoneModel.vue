@@ -2,13 +2,6 @@
 <template>
 	<TresGroup>
 		<primitive :object="model" />
-
-		<!-- <primitive
-			:object="timeSprite"
-			:position="[0.3, 1, 0]"
-			:scale="[0.4, 0.12, 1]"
-		/> -->
-
 		<!-- Icons Group -->
 		<TresGroup :position="screenPosition" :rotation="screenRotation">
 			<!-- Time Text -->
@@ -37,13 +30,20 @@
 
 			<!-- Zoom Button Label -->
 			<Text3D
-				text="Launch App"
+				text="Open"
 				:position="[-0, -0.8, 0.15]"
 				:size="0.07"
 				:rotation="[0, 0, 0]"
 				font="/fonts/helvetiker_regular.typeface.json"
-				center
-			/>
+				cast-shadow
+				receive-shadow
+			>
+				<TresMeshStandardMaterial
+					color="white"
+					:metalness="0.4"
+					:roughness="0.4"
+				/>
+			</Text3D>
 		</TresGroup>
 	</TresGroup>
 </template>
