@@ -3,15 +3,22 @@
 	<TresGroup>
 		<primitive :object="model" />
 
-		<!-- Time Text -->
-		<primitive
+		<!-- <primitive
 			:object="timeSprite"
 			:position="[0.3, 1, 0]"
 			:scale="[0.4, 0.12, 1]"
-		/>
+		/> -->
 
 		<!-- Icons Group -->
 		<TresGroup :position="screenPosition" :rotation="screenRotation">
+			<!-- Time Text -->
+
+			<primitive
+				:object="timePlane"
+				:position="[0.3, 0.8, 0.01]"
+				:scale="[0.4, 0.12, 1]"
+			/>
+
 			<TresMesh
 				v-for="(icon, index) in icons"
 				:key="icon.name"
@@ -30,11 +37,12 @@
 
 			<!-- Zoom Button Label -->
 			<Text3D
-				text="Open App"
+				text="Launch App"
 				:position="[-0, -0.8, 0.15]"
 				:size="0.07"
 				:rotation="[0, 0, 0]"
 				font="/fonts/helvetiker_regular.typeface.json"
+				center
 			/>
 		</TresGroup>
 	</TresGroup>
@@ -43,7 +51,6 @@
 <script setup lang="ts">
 	import { useGLTF, Text3D } from '@tresjs/cientos';
 	import { ref } from 'vue';
-	import { TextureLoader, Sprite, SpriteMaterial, CanvasTexture } from 'three';
 	import { RoundedBoxGeometry } from 'three-stdlib';
 	import gsap from 'gsap';
 	import * as THREE from 'three';
@@ -68,22 +75,26 @@
 	}
 
 	// Create canvas-based texture for time
-	function createTimeTexture(text: string): CanvasTexture {
+	function createTimeTexture(text: string): THREE.CanvasTexture {
 		const canvas = document.createElement('canvas');
 		canvas.width = 256;
 		canvas.height = 64;
 		const ctx = canvas.getContext('2d')!;
 		ctx.fillStyle = 'white';
 		ctx.fillRect(0, 0, canvas.width, canvas.height);
-		ctx.font = 'bold 28px Arial';
+		ctx.font = 'bold 32px Arial';
 		ctx.fillStyle = 'black';
 		ctx.textAlign = 'right';
 		ctx.fillText(text, canvas.width - 10, 40);
-		return new CanvasTexture(canvas);
+		return new THREE.CanvasTexture(canvas);
 	}
 
-	const timeTexture = ref<CanvasTexture>(createTimeTexture('00:00'));
-	const timeSprite = new Sprite(new SpriteMaterial({ map: timeTexture.value }));
+	const timeTexture = ref<THREE.CanvasTexture>(createTimeTexture('00:00'));
+
+	const timePlane = new THREE.Mesh(
+		new THREE.PlaneGeometry(1.2, 1),
+		new THREE.MeshBasicMaterial({ map: timeTexture.value, transparent: true })
+	);
 
 	const updateTimeTexture = () => {
 		const now = new Date();
@@ -92,8 +103,8 @@
 			minute: '2-digit',
 		});
 		timeTexture.value = createTimeTexture(timeStr);
-		timeSprite.material.map = timeTexture.value;
-		timeSprite.material.needsUpdate = true;
+		timePlane.material.map = timeTexture.value;
+		timePlane.material.needsUpdate = true;
 	};
 
 	updateTimeTexture();
@@ -102,12 +113,12 @@
 	const icons = ref([
 		{
 			name: 'PortfolioIcon',
-			texture: new TextureLoader().load('/icons/Misael_Logo.svg'),
+			texture: new THREE.TextureLoader().load('/icons/Misael_Logo.svg'),
 			url: 'https://misaelm.com',
 		},
 		{
 			name: 'LinkedInIcon',
-			texture: new TextureLoader().load('/icons/LinkedIn_icon.svg'),
+			texture: new THREE.TextureLoader().load('/icons/LinkedIn_icon.svg'),
 			url: 'https://linkedin.com/in/yourprofile',
 		},
 	]);
