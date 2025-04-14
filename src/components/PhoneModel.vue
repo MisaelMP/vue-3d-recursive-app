@@ -4,12 +4,10 @@
 		<primitive :object="model" />
 
 		<!-- Time Text -->
-		<Text3D
-			:text="currentTime"
-			:position="[0, 1.1, 0.17]"
-			:rotation="screenRotation"
-			font="/fonts/helvetiker_regular.typeface.json"
-			:size="0.1"
+		<primitive
+			:object="timeSprite"
+			:position="[0.3, 1, 0]"
+			:scale="[0.4, 0.12, 1]"
 		/>
 
 		<!-- Icons Group -->
@@ -25,7 +23,7 @@
 			</TresMesh>
 
 			<!-- Zoom Button -->
-			<TresMesh @click="handleAppClick" :position="[0, -0.3, 0.01]">
+			<TresMesh @click="handleAppClick" :position="[0, -0.8, 0.01]">
 				<primitive :object="roundedBox" />
 				<TresMeshStandardMaterial color="#2f84ff" />
 			</TresMesh>
@@ -33,7 +31,7 @@
 			<!-- Zoom Button Label -->
 			<Text3D
 				text="Open App"
-				:position="[-0.33, -0.32, 0.04]"
+				:position="[-0, -0.8, 0.15]"
 				:size="0.07"
 				:rotation="[0, 0, 0]"
 				font="/fonts/helvetiker_regular.typeface.json"
@@ -45,7 +43,7 @@
 <script setup lang="ts">
 	import { useGLTF, Text3D } from '@tresjs/cientos';
 	import { ref } from 'vue';
-	import { TextureLoader } from 'three';
+	import { TextureLoader, Sprite, SpriteMaterial, CanvasTexture } from 'three';
 	import { RoundedBoxGeometry } from 'three-stdlib';
 	import gsap from 'gsap';
 	import * as THREE from 'three';
@@ -53,7 +51,7 @@
 	import { useIntervalFn } from '@vueuse/core';
 
 	const emit = defineEmits(['trigger-recursion']);
-	const { scene: model } = await useGLTF('/models/phone.glb');
+	const { scene: model } = await useGLTF('/models/phone-white.glb');
 
 	const screenPosition = [0, 0.2, 0.17];
 	const screenRotation = [-0.35, 0, 0];
@@ -69,17 +67,37 @@
 		material.emissiveIntensity = 0.9;
 	}
 
-	const currentTime = ref('');
+	// Create canvas-based texture for time
+	function createTimeTexture(text: string): CanvasTexture {
+		const canvas = document.createElement('canvas');
+		canvas.width = 256;
+		canvas.height = 64;
+		const ctx = canvas.getContext('2d')!;
+		ctx.fillStyle = 'white';
+		ctx.fillRect(0, 0, canvas.width, canvas.height);
+		ctx.font = 'bold 28px Arial';
+		ctx.fillStyle = 'black';
+		ctx.textAlign = 'right';
+		ctx.fillText(text, canvas.width - 10, 40);
+		return new CanvasTexture(canvas);
+	}
 
-	const updateTime = () => {
-		currentTime.value = new Date().toLocaleTimeString([], {
+	const timeTexture = ref<CanvasTexture>(createTimeTexture('00:00'));
+	const timeSprite = new Sprite(new SpriteMaterial({ map: timeTexture.value }));
+
+	const updateTimeTexture = () => {
+		const now = new Date();
+		const timeStr = now.toLocaleTimeString([], {
 			hour: '2-digit',
 			minute: '2-digit',
 		});
+		timeTexture.value = createTimeTexture(timeStr);
+		timeSprite.material.map = timeTexture.value;
+		timeSprite.material.needsUpdate = true;
 	};
 
-	updateTime();
-	useIntervalFn(updateTime, 60000);
+	updateTimeTexture();
+	useIntervalFn(updateTimeTexture, 60000);
 
 	const icons = ref([
 		{
