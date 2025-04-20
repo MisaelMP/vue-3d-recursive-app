@@ -2,46 +2,59 @@
 <template>
 	<TresGroup>
 		<primitive :object="model" />
-		<!-- Icons Group -->
-		<TresGroup :position="screenPosition" :rotation="screenRotation">
-			<!-- Time Text -->
 
+		<!-- Shadow-casting light -->
+		<TresDirectionalLight
+			:position="[5, 5, 5]"
+			:intensity="1.5"
+			:cast-shadow="true"
+			shadow-mapSize-width="1024"
+			shadow-mapSize-height="1024"
+		/>
+		<TresGroup :position="[0, 0, -0.1]">
+			<VortexEffect />
+		</TresGroup>
+		<!-- Icons Group - adjusted position to fit on the screen -->
+		<TresGroup :position="screenPosition" :rotation="screenRotation">
+			<!-- Time Text - positioned at top center -->
 			<primitive
 				:object="timePlane"
-				:position="[0.3, 0.8, 0.01]"
-				:scale="[0.4, 0.12, 1]"
+				:position="[0, 0.6, 0.01]"
+				:scale="[0.4, 0.1, 1]"
 			/>
 
+			<!-- Icons positioned in a better layout -->
 			<TresMesh
 				v-for="(icon, index) in icons"
 				:key="icon.name"
-				:position="[index * 0.4 - 0.4, 0.3, 0]"
+				:position="[(index * 2 - 0.5) * 0.2, 0.2, 0.01]"
 				@click="() => handleIconClick(icon.url)"
 			>
-				<TresPlaneGeometry :args="[0.3, 0.3]" />
-				<TresMeshBasicMaterial :map="icon.texture" tone-mapped="false" />
+				<TresPlaneGeometry :args="[0.18, 0.18]" />
+				<TresMeshBasicMaterial :map="icon.texture" :tone-mapped="false" />
 			</TresMesh>
 
-			<!-- Zoom Button -->
-			<TresMesh @click="handleAppClick" :position="[0, -0.8, 0.01]">
+			<!-- Zoom Button - positioned at bottom center -->
+			<TresMesh @click="handleAppClick" :position="[0, -0.5, 0.01]">
 				<primitive :object="roundedBox" />
 				<TresMeshStandardMaterial color="#2f84ff" />
 			</TresMesh>
 
-			<!-- Zoom Button Label -->
+			<!-- OpenButton Label - positioned directly on button -->
 			<Text3D
 				text="Open"
-				:position="[-0, -0.8, 0.15]"
-				:size="0.07"
+				:position="[0, -0.5, 0]"
+				:size="0.05"
+				:height="0.01"
 				:rotation="[0, 0, 0]"
 				font="/fonts/helvetiker_regular.typeface.json"
 				cast-shadow
 				receive-shadow
 			>
 				<TresMeshStandardMaterial
-					color="white"
-					:metalness="0.4"
-					:roughness="0.4"
+					color="red"
+					:metalness="0.5"
+					:roughness="0.5"
 				/>
 			</Text3D>
 		</TresGroup>
@@ -56,22 +69,33 @@
 	import * as THREE from 'three';
 	import { Color } from 'three';
 	import { useIntervalFn } from '@vueuse/core';
+	import VortexEffect from './VortexEffect.vue';
 
-	const emit = defineEmits(['trigger-recursion']);
-	const { scene: model } = await useGLTF('/models/phone-white.glb');
+	const { scene: model } = await useGLTF('/models/iphone-empty.glb');
 
-	const screenPosition = [0, 0.2, 0.17];
-	const screenRotation = [-0.35, 0, 0];
+	// Phone position
+	model.position.set(0.25, -4.5, 1);
+	model.rotation.set(-0.15, 1.6, 0);
+	model.scale.set(1, 1, 1);
 
-	model.rotation.set(1.3, 4.7, 0);
+	// Enable shadows on the phone model
+	model.traverse((child) => {
+		if (child instanceof THREE.Mesh) {
+			child.castShadow = true;
+		}
+	});
 
-	// brighten the screen TODO: make sure it works
+	// Carefully position the screen content to match the phone's screen
+	const screenPosition: [number, number, number] = [0, 0.15, -0.2];
+	const screenRotation: [number, number, number] = [-0.15, 0, 0];
+
+	// brighten the screen, but reduce intensity for less reflection
 	const screen = model.getObjectByName('Screen');
 	if (screen && (screen as THREE.Mesh).material) {
 		const material = (screen as THREE.Mesh)
 			.material as THREE.MeshStandardMaterial;
 		material.emissive = new Color('#ffffff');
-		material.emissiveIntensity = 0.9;
+		material.emissiveIntensity = 0.5;
 	}
 
 	// Create canvas-based texture for time
@@ -80,20 +104,28 @@
 		canvas.width = 256;
 		canvas.height = 64;
 		const ctx = canvas.getContext('2d')!;
-		ctx.fillStyle = 'white';
-		ctx.fillRect(0, 0, canvas.width, canvas.height);
-		ctx.font = 'bold 32px Arial';
+
+		// Clear with transparent background
+		ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+		// Draw time text
+		ctx.font = 'bold 42px Arial';
+		ctx.textAlign = 'center';
 		ctx.fillStyle = 'black';
-		ctx.textAlign = 'right';
-		ctx.fillText(text, canvas.width - 10, 40);
+		ctx.fillText(text, canvas.width / 2, 42);
+
 		return new THREE.CanvasTexture(canvas);
 	}
 
 	const timeTexture = ref<THREE.CanvasTexture>(createTimeTexture('00:00'));
 
 	const timePlane = new THREE.Mesh(
-		new THREE.PlaneGeometry(1.2, 1),
-		new THREE.MeshBasicMaterial({ map: timeTexture.value, transparent: true })
+		new THREE.PlaneGeometry(1, 1),
+		new THREE.MeshBasicMaterial({
+			map: timeTexture.value,
+			transparent: true,
+			opacity: 0.9,
+		})
 	);
 
 	const updateTimeTexture = () => {
@@ -123,13 +155,15 @@
 		},
 	]);
 
-	const roundedBox = new RoundedBoxGeometry(0.8, 0.3, 0.05, 4, 0.02);
+	// Make the rounded button slightly smaller
+	const roundedBox = new RoundedBoxGeometry(0.5, 0.2, 0.05, 4, 0.02);
 
 	function handleIconClick(url: string) {
 		window.open(url, '_blank');
 	}
 
 	function handleAppClick() {
+		// Just animate the phone without triggering recursion
 		gsap.to(model.position, {
 			z: -5,
 			duration: 1,
@@ -137,6 +171,5 @@
 				gsap.set(model.position, { z: 0 });
 			},
 		});
-		emit('trigger-recursion');
 	}
 </script>
