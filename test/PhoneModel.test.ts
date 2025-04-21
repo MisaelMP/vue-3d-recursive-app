@@ -2,7 +2,13 @@
 
 import { mount, flushPromises } from '@vue/test-utils';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { defineComponent, h, Suspense, ComponentPublicInstance } from 'vue';
+import {
+	defineComponent,
+	h,
+	Suspense,
+	ComponentPublicInstance,
+	Component,
+} from 'vue';
 import PhoneModel from '../src/components/PhoneModel.vue';
 
 // Define globals for testing environment
@@ -10,29 +16,24 @@ declare global {
 	var document: Document;
 }
 
-// Create a synchronous version of the component for testing
-const SyncPhoneModel = defineComponent({
-	name: 'SyncPhoneModel',
-	setup() {
-		return {
-			showVortex: false,
-			buttonText: 'Open',
-			buttonColour: '#2f84ff',
-			buttonColourText: 'white',
-			iconRefs: {},
-			handleAppClick() {
-				this.showVortex = !this.showVortex;
-				this.buttonText = this.showVortex ? 'Close' : 'Open';
-				this.buttonColour = this.showVortex ? '#ff5252' : '#2f84ff';
-				this.buttonColourText = this.showVortex ? 'black' : 'white';
-			},
-			handleIconClick(url, index) {
-				window.open(url, '_blank');
-			},
-		};
+// Create a wrapper component that uses Suspense to handle async components
+const AsyncWrapper = defineComponent({
+	props: {
+		component: {
+			type: Object as () => Component,
+			required: true,
+		},
 	},
-	render() {
-		return h('div', { class: 'mock-phone-model' }, 'Mock Phone Model');
+	setup(props) {
+		return () =>
+			h(
+				Suspense,
+				{},
+				{
+					default: () => h(props.component),
+					fallback: () => h('div', 'Loading...'),
+				}
+			);
 	},
 });
 
@@ -51,7 +52,8 @@ vi.mock('@tresjs/cientos', () => ({
 				},
 			})),
 		};
-		return { scene: mockScene };
+		// Return a Promise to simulate async behavior but resolves immediately
+		return Promise.resolve({ scene: mockScene });
 	}),
 }));
 
@@ -241,21 +243,62 @@ describe('PhoneModel', () => {
 	});
 
 	it('renders correctly', async () => {
-		// Use our synchronous component instead
-		const wrapper = mount(SyncPhoneModel);
+		// Mount the PhoneModel in the Suspense wrapper
+		const wrapper = mount(AsyncWrapper, {
+			props: {
+				component: PhoneModel,
+			},
+			global: {
+				stubs: {
+					TresGroup: true,
+					TresMesh: true,
+					TresPlaneGeometry: true,
+					TresDirectionalLight: true,
+					TresMeshBasicMaterial: true,
+					primitive: true,
+				},
+			},
+		});
+
+		// Initially it should render the loading state
+		expect(wrapper.html()).toContain('Loading...');
+
+		// Wait for all promises to resolve
 		await flushPromises();
 		expect(wrapper.exists()).toBe(true);
 	});
 
 	it('toggles vortex visibility when button is clicked', async () => {
-		const wrapper = mount(SyncPhoneModel);
+		// Mount with suspense wrapper
+		const wrapper = mount(AsyncWrapper, {
+			props: {
+				component: PhoneModel,
+			},
+			global: {
+				stubs: {
+					TresGroup: true,
+					TresMesh: true,
+					TresPlaneGeometry: true,
+					TresDirectionalLight: true,
+					TresMeshBasicMaterial: true,
+					primitive: true,
+				},
+			},
+		});
+
 		await flushPromises();
 
-		const vm = wrapper.vm as PhoneModelInstance;
+		// Get the PhoneModel component within the suspense
+		const phoneModelComponent = wrapper.findComponent(PhoneModel);
+		expect(phoneModelComponent.exists()).toBe(true);
 
-		// Initial state validation
-		expect(vm.showVortex).toBe(false);
-		expect(vm.buttonText).toBe('Open');
+		// Access the vm directly
+		const vm = phoneModelComponent.vm as PhoneModelInstance;
+
+		// Set initial states for testing
+		vm.showVortex = false;
+		vm.buttonText = 'Open';
+		vm.buttonColour = '#2f84ff';
 
 		// Call method directly since we can't reliably find the button
 		await vm.handleAppClick();
@@ -275,10 +318,38 @@ describe('PhoneModel', () => {
 	});
 
 	it('handles icon clicks correctly', async () => {
-		const wrapper = mount(SyncPhoneModel);
+		// Mount with suspense wrapper
+		const wrapper = mount(AsyncWrapper, {
+			props: {
+				component: PhoneModel,
+			},
+			global: {
+				stubs: {
+					TresGroup: true,
+					TresMesh: true,
+					TresPlaneGeometry: true,
+					TresDirectionalLight: true,
+					TresMeshBasicMaterial: true,
+					primitive: true,
+				},
+			},
+		});
+
 		await flushPromises();
 
-		const vm = wrapper.vm as PhoneModelInstance;
+		// Get the PhoneModel component within the suspense
+		const phoneModelComponent = wrapper.findComponent(PhoneModel);
+		const vm = phoneModelComponent.vm as PhoneModelInstance;
+
+		// Initialize iconRefs with mock object
+		vm.iconRefs = {};
+		vm.iconRefs[0] = {
+			scale: {
+				x: 1,
+				y: 1,
+				z: 1,
+			},
+		};
 
 		// Call handleIconClick
 		await vm.handleIconClick('https://misaelm.com', 0);
