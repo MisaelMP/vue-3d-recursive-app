@@ -1,5 +1,3 @@
-// add tests for PhoneModel.vue
-
 import { mount, flushPromises } from '@vue/test-utils';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
@@ -11,12 +9,12 @@ import {
 } from 'vue';
 import PhoneModel from '../src/components/PhoneModel.vue';
 
-// Define globals for testing environment
+// Globals for testing environment
 declare global {
 	var document: Document;
 }
 
-// Create a wrapper component that uses Suspense to handle async components
+// Wrapper component that uses Suspense to handle async components
 const AsyncWrapper = defineComponent({
 	props: {
 		component: {
