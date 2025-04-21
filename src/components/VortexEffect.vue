@@ -1,21 +1,10 @@
 <template>
 	<TresGroup>
 		<!-- Sphere-shaped vortex effect -->
-		<TresMesh
-			:position="[0, 0, 0]"
-			:rotation="[0, rotation, 0]"
-			:scale="2.0"
-			Slightly
-			smaller
-			than
-			glass
-			sphere
-			(2.3)
-		>
-			>
+		<TresMesh :position="[0, 0, 0]" :rotation="[0, rotation, 0]" :scale="2.0">
 			<TresSphereGeometry :args="[1, 64, 64]" />
 			<TresMeshBasicMaterial :transparent="true" :visible="false" />
-			<!-- Required for TresJS -->
+			<!-- Use the custom shader material -->
 			<primitive :object="vortexShaderMaterial" />
 		</TresMesh>
 	</TresGroup>

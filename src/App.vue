@@ -54,10 +54,6 @@
 						<!-- Glass sphere with vortex inside it -->
 						<TresGroup :position="[0, 0.2, -0.2]">
 							<VortexSphere />
-							<!-- Center vortex perfectly inside the glass sphere -->
-							<TresGroup :position="[0, 0, 0]">
-								<VortexEffect />
-							</TresGroup>
 						</TresGroup>
 					</TresGroup>
 				</template>
@@ -87,7 +83,6 @@
 	import { provide, ref, onMounted, watch } from 'vue';
 	import { OrbitControls, Text3D } from '@tresjs/cientos';
 	import VortexSphere from './components/VortexSphere.vue';
-	import VortexEffect from './components/VortexEffect.vue';
 	import PhoneModel from './components/PhoneModel.vue';
 	import {
 		ACESFilmicToneMapping,

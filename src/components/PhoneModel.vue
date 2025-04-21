@@ -11,7 +11,8 @@
 			shadow-mapSize-width="1024"
 			shadow-mapSize-height="1024"
 		/>
-		<TresGroup :position="[0, 0, -0.1]">
+		<!-- Conditionally render VortexEffect -->
+		<TresGroup :position="[0, 0, -0.1]" v-if="showVortex">
 			<VortexEffect />
 		</TresGroup>
 		<!-- Icons Group - adjusted position to fit on the screen -->
@@ -19,7 +20,7 @@
 			<!-- Time Text - positioned at top center -->
 			<primitive
 				:object="timePlane"
-				:position="[0, 0.6, 0.01]"
+				:position="[0, 0.6, 0.05]"
 				:scale="[0.4, 0.1, 1]"
 			/>
 
@@ -27,44 +28,43 @@
 			<TresMesh
 				v-for="(icon, index) in icons"
 				:key="icon.name"
-				:position="[(index * 2 - 0.5) * 0.2, 0.2, 0.01]"
-				@click="() => handleIconClick(icon.url)"
+				:position="[(index * 2 - 0.5) * 0.2, 0.2, 0.05]"
+				:ref="
+					(el) => {
+						if (el) iconRefs[index] = el;
+					}
+				"
+				@click="() => handleIconClick(icon.url, index)"
 			>
 				<TresPlaneGeometry :args="[0.18, 0.18]" />
-				<TresMeshBasicMaterial :map="icon.texture" :tone-mapped="false" />
-			</TresMesh>
-
-			<!-- Zoom Button - positioned at bottom center -->
-			<TresMesh @click="handleAppClick" :position="[0, -0.5, 0.01]">
-				<primitive :object="roundedBox" />
-				<TresMeshStandardMaterial color="#2f84ff" />
-			</TresMesh>
-
-			<!-- OpenButton Label - positioned directly on button -->
-			<Text3D
-				text="Open"
-				:position="[0, -0.5, 0]"
-				:size="0.05"
-				:height="0.01"
-				:rotation="[0, 0, 0]"
-				font="/fonts/helvetiker_regular.typeface.json"
-				cast-shadow
-				receive-shadow
-			>
-				<TresMeshStandardMaterial
-					color="red"
-					:metalness="0.5"
-					:roughness="0.5"
+				<TresMeshBasicMaterial
+					:map="icon.texture"
+					:tone-mapped="false"
+					:depth-test="false"
 				/>
-			</Text3D>
+			</TresMesh>
+
+			<!-- Button with texture-based text -->
+			<TresMesh
+				ref="buttonRef"
+				@click="handleAppClick"
+				:position="[0, -0.5, 0.05]"
+			>
+				<TresPlaneGeometry :args="[0.5, 0.2]" />
+				<TresMeshBasicMaterial
+					:map="buttonTexture"
+					:transparent="true"
+					:tone-mapped="false"
+					:depth-test="false"
+				/>
+			</TresMesh>
 		</TresGroup>
 	</TresGroup>
 </template>
 
 <script setup lang="ts">
-	import { useGLTF, Text3D } from '@tresjs/cientos';
-	import { ref } from 'vue';
-	import { RoundedBoxGeometry } from 'three-stdlib';
+	import { useGLTF } from '@tresjs/cientos';
+	import { ref, reactive, watch } from 'vue';
 	import gsap from 'gsap';
 	import * as THREE from 'three';
 	import { Color } from 'three';
@@ -98,6 +98,14 @@
 		material.emissiveIntensity = 0.5;
 	}
 
+	// State for conditional rendering and animations
+	const showVortex = ref(false);
+	const buttonColour = ref('#2f84ff');
+	const buttonColourText = ref('white');
+	const buttonText = ref('Open');
+	const buttonRef = ref<any>(null);
+	const iconRefs = reactive<Record<number, any>>({});
+
 	// Create canvas-based texture for time
 	function createTimeTexture(text: string): THREE.CanvasTexture {
 		const canvas = document.createElement('canvas');
@@ -111,7 +119,7 @@
 		// Draw time text
 		ctx.font = 'bold 42px Arial';
 		ctx.textAlign = 'center';
-		ctx.fillStyle = 'black';
+		ctx.fillStyle = 'white';
 		ctx.fillText(text, canvas.width / 2, 42);
 
 		return new THREE.CanvasTexture(canvas);
@@ -124,7 +132,8 @@
 		new THREE.MeshBasicMaterial({
 			map: timeTexture.value,
 			transparent: true,
-			opacity: 0.9,
+			opacity: 1.0,
+			depthTest: false,
 		})
 	);
 
@@ -151,25 +160,109 @@
 		{
 			name: 'LinkedInIcon',
 			texture: new THREE.TextureLoader().load('/icons/LinkedIn_icon.svg'),
-			url: 'https://linkedin.com/in/yourprofile',
+			url: 'https://www.linkedin.com/in/misael-mercado/',
 		},
 	]);
 
-	// Make the rounded button slightly smaller
-	const roundedBox = new RoundedBoxGeometry(0.5, 0.2, 0.05, 4, 0.02);
+	const handleIconClick = (url: string, index: number) => {
+		// Animate the icon scale
+		const iconMesh = iconRefs[index];
+		if (iconMesh && iconMesh.scale) {
+			// Simple pulse animation
+			gsap.to(iconMesh.scale, {
+				x: 1.2,
+				y: 1.2,
+				z: 1.2,
+				duration: 0.2,
+				ease: 'back.out',
+				onComplete: () => {
+					gsap.to(iconMesh.scale, {
+						x: 1,
+						y: 1,
+						z: 1,
+						duration: 0.2,
+					});
+				},
+			});
+		}
 
-	function handleIconClick(url: string) {
 		window.open(url, '_blank');
-	}
+	};
 
-	function handleAppClick() {
-		// Just animate the phone without triggering recursion
-		gsap.to(model.position, {
-			z: -5,
-			duration: 1,
-			onComplete: () => {
-				gsap.set(model.position, { z: 0 });
-			},
-		});
-	}
+	// Create button with text
+	const createTextTexture = (text: string): THREE.CanvasTexture => {
+		const canvas = document.createElement('canvas');
+		canvas.width = 256;
+		canvas.height = 128;
+		const ctx = canvas.getContext('2d')!;
+
+		// Clear canvas
+		ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+		// Draw button background with stronger opacity
+		ctx.fillStyle = buttonColour.value;
+		ctx.roundRect(0, 0, canvas.width, canvas.height, 20);
+		ctx.fill();
+
+		ctx.roundRect(0, 0, canvas.width, canvas.height, 20);
+		ctx.stroke();
+
+		// Draw text
+		ctx.font = 'bold 48px Arial';
+		ctx.textAlign = 'center';
+		ctx.textBaseline = 'middle';
+		ctx.fillStyle = buttonColourText.value;
+		ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+
+		return new THREE.CanvasTexture(canvas);
+	};
+
+	const buttonTexture = ref<THREE.CanvasTexture>(createTextTexture('Open'));
+
+	// Update button texture when text changes
+	watch(buttonText, (newText) => {
+		buttonTexture.value = createTextTexture(newText);
+		if (buttonRef.value?.material) {
+			buttonRef.value.material.map = buttonTexture.value;
+			buttonRef.value.material.needsUpdate = true;
+		}
+	});
+
+	// Update button texture when color changes
+	watch(buttonColour, () => {
+		buttonTexture.value = createTextTexture(buttonText.value);
+		if (buttonRef.value?.material) {
+			buttonRef.value.material.map = buttonTexture.value;
+			buttonRef.value.material.needsUpdate = true;
+		}
+	});
+
+	const handleAppClick = () => {
+		// Toggle vortex visibility
+		showVortex.value = !showVortex.value;
+		buttonText.value = showVortex.value ? 'Close' : 'Open';
+		buttonColour.value = showVortex.value ? '#ff5252' : '#2f84ff';
+		buttonColourText.value = showVortex.value ? 'black' : 'white';
+
+		// Animate button
+		const btn = buttonRef.value;
+		if (btn && btn.scale) {
+			// Simple pulse animation
+			gsap.to(btn.scale, {
+				x: 1.2,
+				y: 1.2,
+				z: 1.2,
+				duration: 0.2,
+				ease: 'back.out',
+				onComplete: () => {
+					gsap.to(btn.scale, {
+						x: 1,
+						y: 1,
+						z: 1,
+						duration: 0.2,
+					});
+				},
+			});
+		}
+	};
 </script>
