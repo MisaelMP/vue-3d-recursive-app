@@ -47,6 +47,7 @@
 			<!-- Button with texture-based text -->
 			<TresMesh
 				ref="buttonRef"
+				data-button="true"
 				@click="handleAppClick"
 				:position="[0, -0.5, 0.05]"
 			>
