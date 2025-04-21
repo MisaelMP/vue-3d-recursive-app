@@ -117,10 +117,10 @@
 		ctx.clearRect(0, 0, canvas.width, canvas.height);
 
 		// Draw time text
-		ctx.font = 'bold 42px Arial';
+		ctx.font = 'bold 56px Arial';
 		ctx.textAlign = 'center';
 		ctx.fillStyle = 'white';
-		ctx.fillText(text, canvas.width / 2, 42);
+		ctx.fillText(text, canvas.width / 2, 56);
 
 		return new THREE.CanvasTexture(canvas);
 	}

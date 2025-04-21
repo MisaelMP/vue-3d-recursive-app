@@ -14,9 +14,7 @@
 		"@tresjs/core": "^4.3.3",
 		"@vueuse/core": "^13.1.0",
 		"gsap": "^3.12.7",
-		"simplex-noise": "^4.0.3",
 		"three": "^0.175.0",
-		"tsl-textures": "^1.10.0",
 		"vue": "^3.5.13"
 	},
 	"devDependencies": {
