@@ -9,6 +9,20 @@ declare global {
 	}
 }
 
+interface VortexEffectInstance {
+	vortexShaderMaterial: {
+		update: () => void;
+		uniforms: {
+			uTime: { value: number };
+		};
+		transparent: boolean;
+		side: string;
+		depthWrite: boolean;
+		depthTest: boolean;
+		blending: string;
+	};
+}
+
 // Mock THREE components
 vi.mock('three', async () => {
 	const actual = await vi.importActual('three');
@@ -118,20 +132,6 @@ describe('VortexEffect', () => {
 	it('initializes vortexShaderMaterial on mount', async () => {
 		const wrapper = mount(VortexEffect);
 		await flushPromises();
-
-		interface VortexEffectInstance {
-			vortexShaderMaterial: {
-				update: () => void;
-				uniforms: {
-					uTime: { value: number };
-				};
-				transparent: boolean;
-				side: string;
-				depthWrite: boolean;
-				depthTest: boolean;
-				blending: string;
-			};
-		}
 
 		const vm = wrapper.vm as unknown as VortexEffectInstance;
 		expect(vm.vortexShaderMaterial).toBeDefined();

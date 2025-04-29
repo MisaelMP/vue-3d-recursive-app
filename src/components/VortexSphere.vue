@@ -47,7 +47,6 @@
 	import type { Object3D, Scene } from 'three';
 
 	const sphereRef = ref<Object3D | null>(null);
-	const scene = inject<Scene | null>('scene', null);
 
 	// Dynamic glow color
 	const glowHue = ref(0.55); // Start with blue
