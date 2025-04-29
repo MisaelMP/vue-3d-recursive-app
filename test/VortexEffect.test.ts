@@ -119,7 +119,21 @@ describe('VortexEffect', () => {
 		const wrapper = mount(VortexEffect);
 		await flushPromises();
 
-		const vm = wrapper.vm as any;
+		interface VortexEffectInstance {
+			vortexShaderMaterial: {
+				update: () => void;
+				uniforms: {
+					uTime: { value: number };
+				};
+				transparent: boolean;
+				side: string;
+				depthWrite: boolean;
+				depthTest: boolean;
+				blending: string;
+			};
+		}
+
+		const vm = wrapper.vm as unknown as VortexEffectInstance;
 		expect(vm.vortexShaderMaterial).toBeDefined();
 	});
 
@@ -127,7 +141,7 @@ describe('VortexEffect', () => {
 		const wrapper = mount(VortexEffect);
 		await flushPromises();
 
-		const vm = wrapper.vm as any;
+		const vm = wrapper.vm as unknown as VortexEffectInstance;
 		const initialRotation = vm.rotation;
 
 		// Manually trigger the render loop callback
@@ -143,7 +157,7 @@ describe('VortexEffect', () => {
 		const wrapper = mount(VortexEffect);
 		await flushPromises();
 
-		const vm = wrapper.vm as any;
+		const vm = wrapper.vm as unknown as VortexEffectInstance;
 		const updateSpy = vi.spyOn(vm.vortexShaderMaterial, 'update');
 
 		// Manually trigger the render loop callback

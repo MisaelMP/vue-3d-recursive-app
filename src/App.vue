@@ -90,6 +90,8 @@
 		PCFSoftShadowMap,
 		PMREMGenerator,
 		EquirectangularReflectionMapping,
+		WebGLRenderer,
+		Scene,
 	} from 'three';
 	import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
 	import { useElementSize, useWindowSize } from '@vueuse/core';
@@ -113,7 +115,10 @@
 		console.log(`Window resized: ${windowWidth.value}x${windowHeight.value}`);
 	});
 
-	const handleCanvasReady = (event: any) => {
+	const handleCanvasReady = (event: {
+		scene: Scene;
+		renderer: { renderState: { webGLRenderer: WebGLRenderer } };
+	}) => {
 		// Store references to renderer, scene, etc.
 		const { scene: sceneObj, renderer } = event;
 
@@ -124,7 +129,7 @@
 		const rgbeLoader = new RGBELoader();
 		rgbeLoader.load(
 			'/textures/hdri/rogland_clear_night_1k.hdr',
-			(hdrTexture: any) => {
+			(hdrTexture) => {
 				hdrTexture.mapping = EquirectangularReflectionMapping;
 
 				// Make sure renderer is properly initialized

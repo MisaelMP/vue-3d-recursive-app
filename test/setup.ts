@@ -3,10 +3,10 @@ import { config } from '@vue/test-utils';
 
 // Define the global type
 declare const global: {
-	ResizeObserver: any;
-	requestAnimationFrame: (callback: (time: number) => void) => number;
+	ResizeObserver: typeof ResizeObserver;
+	requestAnimationFrame: (callback: FrameRequestCallback) => number;
 	cancelAnimationFrame: (handle: number) => void;
-	HTMLCanvasElement: any;
+	HTMLCanvasElement: typeof HTMLCanvasElement;
 } & typeof globalThis;
 
 // Setup global mocks before all tests

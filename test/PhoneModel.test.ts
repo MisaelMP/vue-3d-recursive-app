@@ -97,7 +97,7 @@ vi.mock('three', () => {
 			}
 		},
 		MeshBasicMaterial: class MockMeshBasicMaterial {
-			constructor(options: any) {
+			constructor(options: Record<string, unknown>) {
 				return {
 					...options,
 					needsUpdate: false,
@@ -105,7 +105,7 @@ vi.mock('three', () => {
 			}
 		},
 		MeshStandardMaterial: class MockMeshStandardMaterial {
-			constructor(options: any) {
+			constructor(options: Record<string, unknown>) {
 				return {
 					...options,
 					emissive: { set: vi.fn() },
@@ -115,7 +115,7 @@ vi.mock('three', () => {
 			}
 		},
 		ShaderMaterial: class MockShaderMaterial {
-			constructor(options: any) {
+			constructor(options: Record<string, unknown>) {
 				return {
 					...options,
 					uniforms: options?.uniforms || {},
@@ -230,7 +230,7 @@ interface PhoneModelInstance extends ComponentPublicInstance {
 	buttonText: string;
 	buttonColour: string;
 	buttonColourText: string;
-	iconRefs: Record<number, any>;
+	iconRefs: Record<number, unknown>;
 	handleAppClick: () => void;
 	handleIconClick: (url: string, index: number) => void;
 }

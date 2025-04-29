@@ -44,10 +44,10 @@
 	import { ref, inject, computed } from 'vue';
 	import { DoubleSide, Color } from 'three';
 	import { useRenderLoop } from '@tresjs/core';
+	import type { Object3D, Scene } from 'three';
 
-	// References
-	const sphereRef = ref<any>(null);
-	const scene = inject('scene');
+	const sphereRef = ref<Object3D | null>(null);
+	const scene = inject<Scene | null>('scene', null);
 
 	// Dynamic glow color
 	const glowHue = ref(0.55); // Start with blue

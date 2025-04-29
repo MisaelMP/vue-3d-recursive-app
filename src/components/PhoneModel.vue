@@ -104,8 +104,8 @@
 	const buttonColour = ref('#2f84ff');
 	const buttonColourText = ref('white');
 	const buttonText = ref('Open');
-	const buttonRef = ref<any>(null);
-	const iconRefs = reactive<Record<number, any>>({});
+	const buttonRef = ref<unknown>(null);
+	const iconRefs = reactive<Record<number, unknown>>({});
 
 	// Create canvas-based texture for time
 	function createTimeTexture(text: string): THREE.CanvasTexture {
