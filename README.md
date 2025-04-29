@@ -10,6 +10,7 @@ A modern 3D web application built with Vue 3, TresJS, and Three.js, featuring an
 - 📱 Responsive design that works across devices
 - ⚡ Real-time animations and interactions
 - 🔗 Social media and portfolio links integration
+- 🚀 Automatic deployment with Vercel
 
 ## Tech Stack
 
@@ -20,6 +21,7 @@ A modern 3D web application built with Vue 3, TresJS, and Three.js, featuring an
 - GLSL for custom shaders
 - Vite for fast development and building
 - Vitest for unit testing
+- Vercel for deployment
 
 ## Getting Started
 
@@ -115,3 +117,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - TresJS team for the amazing Vue + Three.js integration
 - Three.js community for the incredible 3D graphics library
 - Vue team for the reactive framework
+- Vercel team for the seamless deployment platform

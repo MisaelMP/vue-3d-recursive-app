@@ -3,6 +3,13 @@
 	"devCommand": "npm run dev",
 	"installCommand": "npm install",
 	"framework": "vite",
+	"git": {
+		"deploymentEnabled": {
+			"master": true,
+			"development": false,
+			"staging": false
+		}
+	},
 	"builds": [
 		{
 			"src": "package.json",
