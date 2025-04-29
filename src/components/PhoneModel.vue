@@ -2,11 +2,6 @@
 <template>
 	<TresGroup>
 		<primitive :object="model" />
-		<VortexEffect
-			v-if="showVortex"
-			:position="[0, 0, 0]"
-			:scale="[2.2, 2.2, 2.2]"
-		/>
 		<TresGroup :position="screenPosition" :rotation="screenRotation">
 			<!-- Time Text - positioned at top center -->
 			<primitive
@@ -52,7 +47,7 @@
 			<!-- Button -->
 			<TresMesh
 				ref="buttonRef"
-				:position="[0, -0.8, 0.01]"
+				:position="[0, -0.8, -0.1]"
 				@click="handleAppClick"
 			>
 				<TresPlaneGeometry :args="[0.5, 0.2]" />
@@ -64,6 +59,11 @@
 				/>
 			</TresMesh>
 		</TresGroup>
+		<VortexEffect
+			v-if="showVortex"
+			:position="[0, 0, 0.1]"
+			:scale="[2.2, 2.2, 2.2]"
+		/>
 	</TresGroup>
 </template>
 
