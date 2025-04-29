@@ -1,36 +1,31 @@
 <template>
 	<TresGroup>
 		<!-- Sphere-shaped vortex effect -->
-		<TresMesh :position="[0, 0, 0]" :rotation="[0, rotation, 0]" :scale="2.0">
-			<TresSphereGeometry :args="[1, 64, 64]" />
-			<TresMeshBasicMaterial :transparent="true" :visible="false" />
-			<!-- Use the custom shader material -->
+		<TresMesh :position="[0, 0, 0]" :scale="[0.95, 0.95, 0.95]">
+			<TresSphereGeometry :args="[1, 32, 32]" />
 			<primitive :object="vortexShaderMaterial" />
 		</TresMesh>
 	</TresGroup>
 </template>
 
 <script setup lang="ts">
-	import { ref } from 'vue';
+	import { ref, onMounted } from 'vue';
 	import { useRenderLoop } from '@tresjs/core';
 	import { VortexShaderMaterial } from '../shaders/VortexShaderMaterial';
 
-	// Rotation state
-	const rotation = ref(0);
-
-	// Create shader material
 	const vortexShaderMaterial = new VortexShaderMaterial();
 
-	// Animation update function
-	const update = () => {
-		// Update time for shader animation
-		vortexShaderMaterial.update(0.015);
+	// Initialize shader with default values
+	onMounted(() => {
+		vortexShaderMaterial.setSpeed(0.4);
+		vortexShaderMaterial.setStrength(1.0);
+		vortexShaderMaterial.setBrightness(1.1);
+		vortexShaderMaterial.setOpacity(0.7);
+	});
 
-		// Slowly rotate the entire vortex
-		rotation.value += 0.001;
-	};
-
-	// Use Tres render loop for animations
+	// Update shader on each frame
 	const { onLoop } = useRenderLoop();
-	onLoop(update);
+	onLoop(({ delta }) => {
+		vortexShaderMaterial.update(delta);
+	});
 </script>

@@ -2,54 +2,58 @@
 <template>
 	<TresGroup>
 		<primitive :object="model" />
-
-		<!-- Shadow-casting light -->
-		<TresDirectionalLight
-			:position="[5, 5, 5]"
-			:intensity="1.5"
-			:cast-shadow="true"
-			shadow-mapSize-width="1024"
-			shadow-mapSize-height="1024"
+		<VortexEffect
+			v-if="showVortex"
+			:position="[0, 0, 0]"
+			:scale="[2.2, 2.2, 2.2]"
 		/>
-		<!-- Conditionally render VortexEffect -->
-		<TresGroup :position="[0, 0, -0.1]" v-if="showVortex">
-			<VortexEffect />
-		</TresGroup>
-		<!-- Icons Group - adjusted position to fit on the screen -->
 		<TresGroup :position="screenPosition" :rotation="screenRotation">
 			<!-- Time Text - positioned at top center -->
 			<primitive
 				:object="timePlane"
-				:position="[0, 0.6, 0.05]"
-				:scale="[0.4, 0.1, 1]"
+				:position="[0, 0.8, 0.01]"
+				:scale="[0.4, 0.12, 1]"
 			/>
 
-			<!-- Icons positioned in a better layout -->
+			<!-- Portfolio Icon -->
 			<TresMesh
-				v-for="(icon, index) in icons"
-				:key="icon.name"
-				:position="[(index * 2 - 0.5) * 0.2, 0.2, 0.05]"
-				:ref="
-					(el) => {
-						if (el) iconRefs[index] = el;
-					}
-				"
-				@click="() => handleIconClick(icon.url, index)"
+				:position="[-0.2, 0.2, 0.01]"
+				:ref="(el) => setIconRef('portfolio', el)"
+				@click="() => handleIconClick('https://misaelm.com', 'portfolio')"
 			>
-				<TresPlaneGeometry :args="[0.18, 0.18]" />
+				<TresPlaneGeometry :args="[0.25, 0.25]" />
 				<TresMeshBasicMaterial
-					:map="icon.texture"
+					:map="portfolioTexture"
 					:tone-mapped="false"
 					:depth-test="false"
 				/>
 			</TresMesh>
 
-			<!-- Button with texture-based text -->
+			<!-- LinkedIn Icon -->
+			<TresMesh
+				:position="[0.2, 0.2, 0.01]"
+				:ref="(el) => setIconRef('linkedin', el)"
+				@click="
+					() =>
+						handleIconClick(
+							'https://www.linkedin.com/in/misael-mercado/',
+							'linkedin'
+						)
+				"
+			>
+				<TresPlaneGeometry :args="[0.25, 0.25]" />
+				<TresMeshBasicMaterial
+					:map="linkedinTexture"
+					:tone-mapped="false"
+					:depth-test="false"
+				/>
+			</TresMesh>
+
+			<!-- Button -->
 			<TresMesh
 				ref="buttonRef"
-				data-button="true"
+				:position="[0, -0.8, 0.01]"
 				@click="handleAppClick"
-				:position="[0, -0.5, 0.05]"
 			>
 				<TresPlaneGeometry :args="[0.5, 0.2]" />
 				<TresMeshBasicMaterial
@@ -65,14 +69,16 @@
 
 <script setup lang="ts">
 	import { useGLTF } from '@tresjs/cientos';
-	import { ref, reactive, watch } from 'vue';
-	import gsap from 'gsap';
+	import { ref, onMounted, watch, inject } from 'vue';
 	import * as THREE from 'three';
-	import { Color } from 'three';
 	import { useIntervalFn } from '@vueuse/core';
+	import gsap from 'gsap';
+	import { VortexShaderMaterial } from '../shaders/VortexShaderMaterial';
 	import VortexEffect from './VortexEffect.vue';
+	import { Mesh } from 'three';
 
 	const { scene: model } = await useGLTF('/models/iphone-empty.glb');
+	const scene = inject<THREE.Scene | null>('scene', null);
 
 	// Phone position
 	model.position.set(0.25, -4.5, 1);
@@ -86,51 +92,95 @@
 		}
 	});
 
-	// Carefully position the screen content to match the phone's screen
-	const screenPosition: [number, number, number] = [0, 0.15, -0.2];
+	// Screen content positioning - adjusted to be closer to the screen
+	const screenPosition: [number, number, number] = [0, 0.1, -0.1];
 	const screenRotation: [number, number, number] = [-0.15, 0, 0];
 
-	// brighten the screen, but reduce intensity for less reflection
-	const screen = model.getObjectByName('Screen');
-	if (screen && (screen as THREE.Mesh).material) {
-		const material = (screen as THREE.Mesh)
-			.material as THREE.MeshStandardMaterial;
-		material.emissive = new Color('#ffffff');
-		material.emissiveIntensity = 0.5;
-	}
+	// Icon setup
+	const iconRefs = ref<Record<string, Mesh | null>>({});
 
-	// State for conditional rendering and animations
-	const showVortex = ref(false);
+	// Load icon textures
+	const portfolioTexture = new THREE.TextureLoader().load(
+		'/icons/Misael_Logo.svg'
+	);
+	const linkedinTexture = new THREE.TextureLoader().load(
+		'/icons/LinkedIn_icon.svg'
+	);
+
+	// Button setup
+	const buttonRef = ref<Mesh | null>(null);
 	const buttonColour = ref('#2f84ff');
 	const buttonColourText = ref('white');
 	const buttonText = ref('Open');
-	const buttonRef = ref<THREE.Mesh | null>(null);
-	const iconRefs = reactive<Record<number, THREE.Mesh>>({});
+	const showVortex = ref(false);
+	const vortexColor = ref('#2f84ff');
 
-	// Type guard for THREE.Mesh
-	const isMesh = (obj: unknown): obj is THREE.Mesh => {
-		return obj instanceof THREE.Mesh;
+	// Type guard for Mesh
+	const isMesh = (obj: any): obj is Mesh => {
+		return obj && 'isMesh' in obj && obj.isMesh;
 	};
 
-	// Helper function to safely access mesh properties
-	const getMeshMaterial = (
-		mesh: THREE.Mesh | null
-	): THREE.MeshBasicMaterial | null => {
-		if (!mesh?.material) return null;
-		return mesh.material as THREE.MeshBasicMaterial;
+	// Helper function to set icon ref
+	const setIconRef = (index: string, element: any) => {
+		if (element && isMesh(element)) {
+			iconRefs.value[index] = element;
+		}
 	};
 
-	// Create canvas-based texture for time
+	// Create button texture
+	function createTextTexture(text: string): THREE.CanvasTexture {
+		const canvas = document.createElement('canvas');
+		canvas.width = 256;
+		canvas.height = 128;
+		const ctx = canvas.getContext('2d');
+		if (!ctx) throw new Error('Could not get 2D context');
+
+		ctx.clearRect(0, 0, canvas.width, canvas.height);
+		ctx.fillStyle = buttonColour.value;
+		ctx.roundRect(0, 0, canvas.width, canvas.height, 20);
+		ctx.fill();
+
+		ctx.roundRect(0, 0, canvas.width, canvas.height, 20);
+		ctx.stroke();
+
+		ctx.font = 'bold 48px Arial';
+		ctx.textAlign = 'center';
+		ctx.textBaseline = 'middle';
+		ctx.fillStyle = buttonColourText.value;
+		ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+
+		return new THREE.CanvasTexture(canvas);
+	}
+
+	const buttonTexture = ref<THREE.CanvasTexture>(createTextTexture('Open'));
+
+	// Update button texture when text changes
+	watch(buttonText, (newText) => {
+		buttonTexture.value = createTextTexture(newText);
+		if (buttonRef.value?.material instanceof THREE.MeshBasicMaterial) {
+			buttonRef.value.material.map = buttonTexture.value;
+			buttonRef.value.material.needsUpdate = true;
+		}
+	});
+
+	// Update button texture when color changes
+	watch(buttonColour, () => {
+		buttonTexture.value = createTextTexture(buttonText.value);
+		if (buttonRef.value?.material instanceof THREE.MeshBasicMaterial) {
+			buttonRef.value.material.map = buttonTexture.value;
+			buttonRef.value.material.needsUpdate = true;
+		}
+	});
+
+	// Time display setup
 	function createTimeTexture(text: string): THREE.CanvasTexture {
 		const canvas = document.createElement('canvas');
 		canvas.width = 256;
 		canvas.height = 64;
-		const ctx = canvas.getContext('2d')!;
+		const ctx = canvas.getContext('2d');
+		if (!ctx) throw new Error('Could not get 2D context');
 
-		// Clear with transparent background
 		ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-		// Draw time text
 		ctx.font = 'bold 56px Arial';
 		ctx.textAlign = 'center';
 		ctx.fillStyle = 'white';
@@ -158,31 +208,15 @@
 			minute: '2-digit',
 		});
 		timeTexture.value = createTimeTexture(timeStr);
-		timePlane.material.map = timeTexture.value;
-		timePlane.material.needsUpdate = true;
+		if (timePlane.material instanceof THREE.MeshBasicMaterial) {
+			timePlane.material.map = timeTexture.value;
+			timePlane.material.needsUpdate = true;
+		}
 	};
 
-	updateTimeTexture();
-	useIntervalFn(updateTimeTexture, 60000);
-
-	const icons = ref([
-		{
-			name: 'PortfolioIcon',
-			texture: new THREE.TextureLoader().load('/icons/Misael_Logo.svg'),
-			url: 'https://misaelm.com',
-		},
-		{
-			name: 'LinkedInIcon',
-			texture: new THREE.TextureLoader().load('/icons/LinkedIn_icon.svg'),
-			url: 'https://www.linkedin.com/in/misael-mercado/',
-		},
-	]);
-
-	const handleIconClick = (url: string, index: number) => {
-		// Animate the icon scale
-		const iconMesh = iconRefs[index] as THREE.Mesh;
-		if (iconMesh && iconMesh.scale) {
-			// Simple pulse animation
+	const handleIconClick = (url: string, index: string) => {
+		const iconMesh = iconRefs.value[index];
+		if (isMesh(iconMesh) && iconMesh.scale) {
 			gsap.to(iconMesh.scale, {
 				x: 1.2,
 				y: 1.2,
@@ -190,12 +224,14 @@
 				duration: 0.2,
 				ease: 'back.out',
 				onComplete: () => {
-					gsap.to(iconMesh.scale, {
-						x: 1,
-						y: 1,
-						z: 1,
-						duration: 0.2,
-					});
+					if (isMesh(iconMesh)) {
+						gsap.to(iconMesh.scale, {
+							x: 1,
+							y: 1,
+							z: 1,
+							duration: 0.2,
+						});
+					}
 				},
 			});
 		}
@@ -203,67 +239,15 @@
 		window.open(url, '_blank');
 	};
 
-	// Create button with text
-	const createTextTexture = (text: string): THREE.CanvasTexture => {
-		const canvas = document.createElement('canvas');
-		canvas.width = 256;
-		canvas.height = 128;
-		const ctx = canvas.getContext('2d')!;
-
-		// Clear canvas
-		ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-		// Draw button background with stronger opacity
-		ctx.fillStyle = buttonColour.value;
-		ctx.roundRect(0, 0, canvas.width, canvas.height, 20);
-		ctx.fill();
-
-		ctx.roundRect(0, 0, canvas.width, canvas.height, 20);
-		ctx.stroke();
-
-		// Draw text
-		ctx.font = 'bold 48px Arial';
-		ctx.textAlign = 'center';
-		ctx.textBaseline = 'middle';
-		ctx.fillStyle = buttonColourText.value;
-		ctx.fillText(text, canvas.width / 2, canvas.height / 2);
-
-		return new THREE.CanvasTexture(canvas);
-	};
-
-	const buttonTexture = ref<THREE.CanvasTexture>(createTextTexture('Open'));
-
-	// Update button texture when text changes
-	watch(buttonText, (newText) => {
-		buttonTexture.value = createTextTexture(newText);
-		const material = getMeshMaterial(buttonRef.value);
-		if (material) {
-			material.map = buttonTexture.value;
-			material.needsUpdate = true;
-		}
-	});
-
-	// Update button texture when color changes
-	watch(buttonColour, () => {
-		buttonTexture.value = createTextTexture(buttonText.value);
-		const material = getMeshMaterial(buttonRef.value);
-		if (material) {
-			material.map = buttonTexture.value;
-			material.needsUpdate = true;
-		}
-	});
-
 	const handleAppClick = () => {
-		// Toggle vortex visibility
 		showVortex.value = !showVortex.value;
 		buttonText.value = showVortex.value ? 'Close' : 'Open';
 		buttonColour.value = showVortex.value ? '#ff5252' : '#2f84ff';
 		buttonColourText.value = showVortex.value ? 'black' : 'white';
+		vortexColor.value = showVortex.value ? '#ff5252' : '#2f84ff';
 
-		// Animate button
 		const btn = buttonRef.value;
 		if (isMesh(btn) && btn.scale) {
-			// Simple pulse animation
 			gsap.to(btn.scale, {
 				x: 1.2,
 				y: 1.2,
@@ -271,14 +255,62 @@
 				duration: 0.2,
 				ease: 'back.out',
 				onComplete: () => {
-					gsap.to(btn.scale, {
-						x: 1,
-						y: 1,
-						z: 1,
-						duration: 0.2,
-					});
+					if (isMesh(btn)) {
+						gsap.to(btn.scale, {
+							x: 1,
+							y: 1,
+							z: 1,
+							duration: 0.2,
+						});
+					}
 				},
 			});
 		}
+
+		// Find and animate the VortexSphere
+		if (scene) {
+			scene.traverse((child) => {
+				if (child instanceof THREE.Group && child.name === 'VortexSphere') {
+					const vortex = child;
+					if (showVortex.value) {
+						// Find the shader material
+						vortex.traverse((mesh) => {
+							if (
+								mesh instanceof THREE.Mesh &&
+								mesh.material instanceof VortexShaderMaterial
+							) {
+								const material = mesh.material;
+								// Reset and animate the vortex
+								material.uniforms.uTime.value = 0;
+								material.setSpeed(0.4);
+								material.setStrength(1.0);
+								material.setBrightness(1.1);
+								material.setOpacity(0.7);
+							}
+						});
+					} else {
+						// Fade out the vortex
+						vortex.traverse((mesh) => {
+							if (
+								mesh instanceof THREE.Mesh &&
+								mesh.material instanceof VortexShaderMaterial
+							) {
+								const material = mesh.material;
+								material.setSpeed(0.2);
+								material.setStrength(0.5);
+								material.setBrightness(0.5);
+								material.setOpacity(0.3);
+							}
+						});
+					}
+				}
+			});
+		}
 	};
+
+	// Initialize time display after component is mounted
+	onMounted(() => {
+		updateTimeTexture();
+		useIntervalFn(updateTimeTexture, 60000);
+	});
 </script>

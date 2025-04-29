@@ -60,7 +60,7 @@
 	// Update function to animate rotation and color
 	const update = () => {
 		// Animate glass sphere rotation
-		if (scene && sphereRef.value && sphereRef.value.rotation) {
+		if (sphereRef.value?.rotation) {
 			sphereRef.value.rotation.y += 0.005;
 			sphereRef.value.rotation.x = Math.sin(Date.now() * 0.0005) * 0.1;
 		}

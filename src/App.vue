@@ -12,6 +12,14 @@
 			:useLegacyLights="false"
 			:transmission-sampler="true"
 			@ready="handleCanvasReady"
+			:renderer="{
+				antialias: true,
+				alpha: true,
+				powerPreference: 'high-performance',
+				premultipliedAlpha: false,
+				stencil: false,
+				depth: true,
+			}"
 		>
 			<TresPerspectiveCamera ref="cameraRef" :position="[0, 0, 5]" :fov="50" />
 			<TresAmbientLight :intensity="0.8" />
@@ -92,12 +100,23 @@
 		EquirectangularReflectionMapping,
 		WebGLRenderer,
 		Scene,
+		PerspectiveCamera,
 	} from 'three';
 	import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
 	import { useElementSize, useWindowSize } from '@vueuse/core';
 
-	const cameraRef = ref(null);
-	const containerRef = ref(null);
+	interface CanvasReadyEvent {
+		scene: Scene;
+		renderer: {
+			renderState: {
+				webGLRenderer: WebGLRenderer;
+			};
+		};
+	}
+
+	const cameraRef = ref<PerspectiveCamera | null>(null);
+	const containerRef = ref<HTMLDivElement | null>(null);
+	const rendererReady = ref(false);
 
 	// Use VueUse to track window size
 	const { width: windowWidth, height: windowHeight } = useWindowSize();
@@ -107,7 +126,9 @@
 
 	// Set up camera and environment
 	onMounted(() => {
-		provide('camera', cameraRef.value);
+		if (cameraRef.value) {
+			provide('camera', cameraRef.value);
+		}
 	});
 
 	// Watch for window size changes
@@ -115,53 +136,63 @@
 		console.log(`Window resized: ${windowWidth.value}x${windowHeight.value}`);
 	});
 
-	const handleCanvasReady = (event: {
-		scene: Scene;
-		renderer: { renderState: { webGLRenderer: WebGLRenderer } };
-	}) => {
+	const handleCanvasReady = (event: CanvasReadyEvent) => {
 		// Store references to renderer, scene, etc.
 		const { scene: sceneObj, renderer } = event;
 
 		// Provide the scene to child components
 		provide('scene', sceneObj);
 
-		// Load HDR environment map for reflections
-		const rgbeLoader = new RGBELoader();
-		rgbeLoader.load(
-			'/textures/hdri/rogland_clear_night_1k.hdr',
-			(hdrTexture) => {
-				hdrTexture.mapping = EquirectangularReflectionMapping;
+		// Set renderer as ready
+		rendererReady.value = true;
 
-				// Make sure renderer is properly initialized
-				if (renderer && renderer.renderState) {
-					try {
-						// Create PMREM generator with the renderer's WebGLRenderer instance
-						const pmremGenerator = new PMREMGenerator(
-							renderer.renderState.webGLRenderer
-						);
-						pmremGenerator.compileEquirectangularShader();
+		// Wait for the next frame to ensure renderer is fully initialized
+		requestAnimationFrame(() => {
+			// Load HDR environment map for reflections
+			const rgbeLoader = new RGBELoader();
+			rgbeLoader.load(
+				'/textures/hdri/rogland_clear_night_1k.hdr',
+				(hdrTexture) => {
+					hdrTexture.mapping = EquirectangularReflectionMapping;
 
-						const envMap =
-							pmremGenerator.fromEquirectangular(hdrTexture).texture;
-						sceneObj.environment = envMap;
+					// Make sure renderer is properly initialized
+					if (renderer?.renderState?.webGLRenderer) {
+						try {
+							// Create PMREM generator with the renderer's WebGLRenderer instance
+							const pmremGenerator = new PMREMGenerator(
+								renderer.renderState.webGLRenderer
+							);
+							pmremGenerator.compileEquirectangularShader();
 
-						// Dispose of original HDR texture and generator after processing
-						hdrTexture.dispose();
-						pmremGenerator.dispose();
+							const envMap =
+								pmremGenerator.fromEquirectangular(hdrTexture).texture;
+							sceneObj.environment = envMap;
 
-						console.log('HDRI environment map applied to scene with PMREM');
-					} catch (error) {
-						// If PMREM fails, use the direct approach
-						console.warn('PMREM failed, falling back to direct texture', error);
+							// Dispose of original HDR texture and generator after processing
+							hdrTexture.dispose();
+							pmremGenerator.dispose();
+
+							console.log('HDRI environment map applied to scene with PMREM');
+						} catch (error) {
+							// If PMREM fails, use the direct approach
+							console.warn(
+								'PMREM failed, falling back to direct texture',
+								error
+							);
+							sceneObj.environment = hdrTexture;
+						}
+					} else {
+						// If no renderer, just use the texture directly
+						console.warn('Renderer not available, using direct texture');
 						sceneObj.environment = hdrTexture;
 					}
-				} else {
-					// If no renderer, just use the texture directly
-					console.warn('Renderer not available, using direct texture');
-					sceneObj.environment = hdrTexture;
+				},
+				undefined,
+				(error) => {
+					console.error('Error loading HDRI:', error);
 				}
-			}
-		);
+			);
+		});
 	};
 </script>
 
