@@ -104,8 +104,21 @@
 	const buttonColour = ref('#2f84ff');
 	const buttonColourText = ref('white');
 	const buttonText = ref('Open');
-	const buttonRef = ref<unknown>(null);
-	const iconRefs = reactive<Record<number, unknown>>({});
+	const buttonRef = ref<THREE.Mesh | null>(null);
+	const iconRefs = reactive<Record<number, THREE.Mesh>>({});
+
+	// Type guard for THREE.Mesh
+	const isMesh = (obj: unknown): obj is THREE.Mesh => {
+		return obj instanceof THREE.Mesh;
+	};
+
+	// Helper function to safely access mesh properties
+	const getMeshMaterial = (
+		mesh: THREE.Mesh | null
+	): THREE.MeshBasicMaterial | null => {
+		if (!mesh?.material) return null;
+		return mesh.material as THREE.MeshBasicMaterial;
+	};
 
 	// Create canvas-based texture for time
 	function createTimeTexture(text: string): THREE.CanvasTexture {
@@ -167,7 +180,7 @@
 
 	const handleIconClick = (url: string, index: number) => {
 		// Animate the icon scale
-		const iconMesh = iconRefs[index];
+		const iconMesh = iconRefs[index] as THREE.Mesh;
 		if (iconMesh && iconMesh.scale) {
 			// Simple pulse animation
 			gsap.to(iconMesh.scale, {
@@ -223,18 +236,20 @@
 	// Update button texture when text changes
 	watch(buttonText, (newText) => {
 		buttonTexture.value = createTextTexture(newText);
-		if (buttonRef.value?.material) {
-			buttonRef.value.material.map = buttonTexture.value;
-			buttonRef.value.material.needsUpdate = true;
+		const material = getMeshMaterial(buttonRef.value);
+		if (material) {
+			material.map = buttonTexture.value;
+			material.needsUpdate = true;
 		}
 	});
 
 	// Update button texture when color changes
 	watch(buttonColour, () => {
 		buttonTexture.value = createTextTexture(buttonText.value);
-		if (buttonRef.value?.material) {
-			buttonRef.value.material.map = buttonTexture.value;
-			buttonRef.value.material.needsUpdate = true;
+		const material = getMeshMaterial(buttonRef.value);
+		if (material) {
+			material.map = buttonTexture.value;
+			material.needsUpdate = true;
 		}
 	});
 
@@ -247,7 +262,7 @@
 
 		// Animate button
 		const btn = buttonRef.value;
-		if (btn && btn.scale) {
+		if (isMesh(btn) && btn.scale) {
 			// Simple pulse animation
 			gsap.to(btn.scale, {
 				x: 1.2,
