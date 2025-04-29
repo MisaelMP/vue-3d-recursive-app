@@ -61,7 +61,7 @@
 		</TresGroup>
 		<VortexEffect
 			v-if="showVortex"
-			:position="[0, 0, 0.1]"
+			:position="[0, 0.2, -0.2]"
 			:scale="[2.2, 2.2, 2.2]"
 		/>
 	</TresGroup>
