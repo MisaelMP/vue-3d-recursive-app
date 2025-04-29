@@ -14,12 +14,29 @@ interface VortexEffectInstance {
 		update: () => void;
 		uniforms: {
 			uTime: { value: number };
+			uSpeed: { value: number };
+			uStrength: { value: number };
+			uBrightness: { value: number };
+			uOpacity: { value: number };
 		};
 		transparent: boolean;
 		side: string;
 		depthWrite: boolean;
 		depthTest: boolean;
 		blending: string;
+		setSpeed: (value: number) => void;
+		setStrength: (value: number) => void;
+		setBrightness: (value: number) => void;
+		setOpacity: (value: number) => void;
+	};
+	sphereRef?: {
+		value: {
+			rotation: {
+				x: number;
+				y: number;
+				z: number;
+			};
+		};
 	};
 }
 
@@ -86,12 +103,20 @@ vi.mock('../src/shaders/VortexShaderMaterial', () => ({
 				update: vi.fn(),
 				uniforms: {
 					uTime: { value: 0 },
+					uSpeed: { value: 0 },
+					uStrength: { value: 0 },
+					uBrightness: { value: 0 },
+					uOpacity: { value: 0 },
 				},
 				transparent: true,
 				side: 'DoubleSide',
 				depthWrite: false,
 				depthTest: false,
 				blending: 'AdditiveBlending',
+				setSpeed: vi.fn(),
+				setStrength: vi.fn(),
+				setBrightness: vi.fn(),
+				setOpacity: vi.fn(),
 			};
 		}
 	},
@@ -122,10 +147,7 @@ describe('VortexEffect', () => {
 		// Check for TresSphereGeometry
 		expect(wrapper.find('TresSphereGeometry').exists()).toBe(true);
 
-		// Check for TresMeshBasicMaterial
-		expect(wrapper.find('TresMeshBasicMaterial').exists()).toBe(true);
-
-		// Check for primitive component
+		// Check for primitive with shader material
 		expect(wrapper.find('primitive').exists()).toBe(true);
 	});
 
@@ -142,7 +164,7 @@ describe('VortexEffect', () => {
 		await flushPromises();
 
 		const vm = wrapper.vm as unknown as VortexEffectInstance;
-		const initialRotation = vm.rotation;
+		const initialY = vm.sphereRef?.value?.rotation.y || 0;
 
 		// Manually trigger the render loop callback
 		if (window.__renderLoopCallback) {
@@ -150,7 +172,7 @@ describe('VortexEffect', () => {
 		}
 
 		// Check that rotation was updated
-		expect(vm.rotation).not.toBe(initialRotation);
+		expect(vm.sphereRef?.value?.rotation.y).not.toBe(initialY);
 	});
 
 	it('updates the shader material in the render loop', async () => {

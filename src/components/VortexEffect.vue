@@ -9,7 +9,7 @@
 </template>
 
 <script setup lang="ts">
-	import { ref, onMounted } from 'vue';
+	import { onMounted } from 'vue';
 	import { useRenderLoop } from '@tresjs/core';
 	import { VortexShaderMaterial } from '../shaders/VortexShaderMaterial';
 

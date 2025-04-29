@@ -41,10 +41,10 @@
 </template>
 
 <script setup lang="ts">
-	import { ref, inject, computed } from 'vue';
+	import { ref, computed } from 'vue';
 	import { DoubleSide, Color } from 'three';
 	import { useRenderLoop } from '@tresjs/core';
-	import type { Object3D, Scene } from 'three';
+	import type { Object3D } from 'three';
 
 	const sphereRef = ref<Object3D | null>(null);
 
