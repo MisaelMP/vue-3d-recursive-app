@@ -43,6 +43,12 @@
 				color="#4488ff"
 			/>
 			<TresPointLight :position="[5, -2, 5]" :intensity="1.5" color="#ff8844" />
+			<TresPointLight
+				:position="[0, 0, 2]"
+				:intensity="1.0"
+				color="#ffffff"
+				:distance="5"
+			/>
 			<OrbitControls :enableDamping="true" :dampingFactor="0.05" />
 
 			<!-- Floor for better shadows -->
